@@ -82,6 +82,16 @@ body {
     font-weight: 600;
 }
 
+.demo-header a {
+    color: white;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.demo-header a:hover {
+    opacity: 0.85;
+}
+
 /* Section Styles */
 .main-interface {
     display: flex;
