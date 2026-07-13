@@ -117,3 +117,24 @@ That's the core architectural pattern this demo exists to show.
 - **Circuit breaker** - a safety mechanism that temporarily stops sending
   requests to a model that's failing, so the system can fail over to a
   healthy one instead of repeatedly hitting a broken one.
+
+## Next demo: Smart Routing
+
+There's a second, smaller demo linked from the header of this page called
+**Smart Routing**. It teaches a related but different idea: instead of
+choosing between three different companies' models, it chooses between three
+*tiers* of the same model family (Anthropic Claude):
+
+- **Haiku** - fastest and cheapest, used for simple questions.
+- **Sonnet** - balanced, used for moderate complexity.
+- **Opus** - most capable and most expensive, used for complex or
+  reasoning-heavy questions.
+
+Try asking it something short like "What is the capital of France?" and then
+something longer and more analytical like "Analyze the tradeoffs between
+microservices and monolithic architectures." Watch which tier answers each
+one, and read the "reason" it gives you.
+
+The idea here: **not every question needs your most powerful (and most
+expensive) model.** A good system matches the tool to the job - cheap and
+fast when that's enough, powerful only when the task actually calls for it.
