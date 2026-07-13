@@ -52,6 +52,12 @@ class ModelType(Enum):
     NOVA_LITE = "amazon.nova-lite-v1:0"
     NOVA_MICRO = "amazon.nova-micro-v1:0"
 
+    # Additional Anthropic Claude tiers (used for the complexity-based
+    # smart-routing demo; CLAUDE_3_SONNET above is reused as the "moderate"
+    # tier so there's a single source of truth for that model ID)
+    CLAUDE_HAIKU = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    CLAUDE_OPUS = "us.anthropic.claude-opus-4-5-20251101-v1:0"
+
 
 @dataclass
 class ModelConfig:
@@ -188,7 +194,27 @@ class BedrockConverseAdapter:
             supports_streaming=True,
             timeout_minutes=60
         )
-        
+
+        # Claude Haiku - fastest, cheapest tier for simple queries
+        configs[ModelType.CLAUDE_HAIKU.value] = ModelConfig(
+            model_id=ModelType.CLAUDE_HAIKU.value,
+            provider=ModelProvider.ANTHROPIC,
+            max_tokens=4096,
+            temperature_range=(0.0, 1.0),
+            supports_streaming=True,
+            timeout_minutes=5
+        )
+
+        # Claude Opus - most capable, most expensive tier for complex queries
+        configs[ModelType.CLAUDE_OPUS.value] = ModelConfig(
+            model_id=ModelType.CLAUDE_OPUS.value,
+            provider=ModelProvider.ANTHROPIC,
+            max_tokens=4096,
+            temperature_range=(0.0, 1.0),
+            supports_streaming=True,
+            timeout_minutes=5
+        )
+
         return configs
     
     def get_available_models(self) -> Dict[ModelProvider, List[str]]:

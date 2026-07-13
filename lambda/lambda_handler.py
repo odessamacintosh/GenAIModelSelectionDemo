@@ -615,6 +615,116 @@ def handle_health_check() -> Dict[str, Any]:
         }
 
 
+def estimate_query_complexity(query_text: str) -> float:
+    """
+    Very simple complexity heuristic for the smart-routing demo.
+
+    This is intentionally minimal (no NLP, no keyword taxonomy) so the
+    routing decision is easy to explain in one sentence: longer queries
+    and queries that mention reasoning/analysis words are treated as more
+    complex. This is a teaching example, not a production classifier.
+
+    Args:
+        query_text: The user's query
+
+    Returns:
+        Complexity score from 0.0 (simple) to 1.0 (complex)
+    """
+    length_score = min(len(query_text) / 500, 1.0)  # long queries -> more complex
+
+    reasoning_words = ['why', 'analyze', 'compare', 'explain', 'evaluate', 'design']
+    query_lower = query_text.lower()
+    keyword_score = 0.4 if any(word in query_lower for word in reasoning_words) else 0.0
+
+    return min(length_score + keyword_score, 1.0)
+
+
+def select_model_tier(complexity_score: float) -> Dict[str, str]:
+    """
+    Map a complexity score to a Claude model tier for the smart-routing demo.
+
+    Args:
+        complexity_score: Score from 0.0 (simple) to 1.0 (complex)
+
+    Returns:
+        Dictionary with the selected model_id, tier name, and a short
+        human-readable reason (used for the UI to show why this tier
+        was picked).
+    """
+    if complexity_score < 0.3:
+        return {
+            'model_id': ModelType.CLAUDE_HAIKU.value,
+            'tier': 'haiku',
+            'reason': 'Short, simple query - using the fastest, cheapest model'
+        }
+    elif complexity_score < 0.7:
+        return {
+            'model_id': ModelType.CLAUDE_3_SONNET.value,
+            'tier': 'sonnet',
+            'reason': 'Moderate complexity - using a balanced mid-tier model'
+        }
+    else:
+        return {
+            'model_id': ModelType.CLAUDE_OPUS.value,
+            'tier': 'opus',
+            'reason': 'Complex or reasoning-heavy query - using the most capable model'
+        }
+
+
+def handle_smart_routing_request(event: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Handle the /smart-routing demo: route a query to Haiku, Sonnet, or Opus
+    based on a simple complexity estimate.
+
+    This is a deliberately minimal, standalone example (no load balancer,
+    no health monitor, no circuit breaker) so students can follow the whole
+    decision in a couple of small functions.
+
+    Args:
+        event: Lambda event containing the request body
+
+    Returns:
+        Response data with the answer and the routing decision made
+    """
+    logger.info("Processing smart-routing request")
+
+    try:
+        request_data = parse_request_body(event)
+    except ValueError as e:
+        raise ValueError(str(e))
+
+    query = request_data.get('query', '').strip()
+    if not query:
+        raise ValueError("Missing required parameter: 'query'")
+    if len(query) > 10000:
+        raise ValueError("Query too long (maximum 10,000 characters)")
+
+    adapter, _health_monitor, _router = get_components()
+
+    complexity_score = estimate_query_complexity(query)
+    selection = select_model_tier(complexity_score)
+
+    logger.info(f"Smart routing: complexity={complexity_score:.2f} -> tier={selection['tier']}")
+
+    messages = [create_user_message(query)]
+    response = adapter.converse(
+        model_id=selection['model_id'],
+        messages=messages,
+        max_tokens=1000,
+        temperature=0.7
+    )
+
+    return {
+        'response': response.content,
+        'tier': selection['tier'],
+        'reason': selection['reason'],
+        'complexity_score': round(complexity_score, 2),
+        'model_id': selection['model_id'],
+        'tokens_used': response.tokens_used,
+        'latency_ms': response.latency_ms
+    }
+
+
 def handle_failure_simulation(event: Dict[str, Any]) -> Dict[str, Any]:
     """
     Handle failure simulation requests for educational demonstrations.
@@ -793,7 +903,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             logger.info("Routing to failure simulation handler")
             response_data = handle_failure_simulation(event)
             return create_success_response(response_data)
-            
+
+        elif path == '/smart-routing':
+            logger.info("Routing to smart-routing handler")
+            try:
+                response_data = handle_smart_routing_request(event)
+                return create_success_response(response_data)
+            except ValueError as e:
+                return create_error_response(str(e), 400, "VALIDATION_ERROR")
+            except RuntimeError as e:
+                return create_error_response(str(e), 500, "PROCESSING_ERROR")
+
         else:
             # Default to query processing
             logger.info("Routing to query processing handler")

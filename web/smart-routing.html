@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Routing Demo - Complexity-Based Model Selection</title>
+    <link rel="stylesheet" href="smart-routing-styles.css">
+</head>
+<body>
+    <div id="app">
+        <header class="sr-header">
+            <a href="index.html" class="back-link">&larr; Back to main demo</a>
+            <h1>Smart Routing: Pick the Right Model for the Job</h1>
+            <p class="subtitle">Simple queries go to a fast, cheap model. Complex queries go to a more powerful one.</p>
+        </header>
+
+        <main class="sr-main">
+            <section class="sr-query-section">
+                <label for="queryInput">Ask a question:</label>
+                <textarea id="queryInput" rows="4" placeholder="Try something short like &quot;What is the capital of France?&quot; or something complex like &quot;Analyze the tradeoffs between microservices and monoliths and explain why you'd choose one.&quot;"></textarea>
+                <button id="submitBtn">Submit Query</button>
+            </section>
+
+            <section class="sr-result-section" id="resultSection" style="display:none;">
+                <div class="sr-routing-decision">
+                    <span class="sr-tier-badge" id="tierBadge">-</span>
+                    <span id="reasonText"></span>
+                </div>
+                <div class="sr-meta">
+                    <span>Complexity score: <strong id="complexityScore">-</strong></span>
+                    <span>Tokens used: <strong id="tokensUsed">-</strong></span>
+                    <span>Latency: <strong id="latencyMs">-</strong> ms</span>
+                </div>
+                <div class="sr-answer" id="answerText"></div>
+            </section>
+
+            <section class="sr-error-section" id="errorSection" style="display:none;"></section>
+
+            <section class="sr-explainer">
+                <h2>How this works</h2>
+                <p>
+                    Every query is scored from 0.0 (simple) to 1.0 (complex) based on its
+                    length and whether it contains words like "analyze", "compare", or "explain".
+                    That score picks one of three Claude models:
+                </p>
+                <ul>
+                    <li><strong>Haiku</strong> (score &lt; 0.3) - fastest and cheapest, for simple factual questions.</li>
+                    <li><strong>Sonnet</strong> (score 0.3-0.7) - balanced, for moderate complexity.</li>
+                    <li><strong>Opus</strong> (score &gt; 0.7) - most capable and most expensive, for complex reasoning.</li>
+                </ul>
+                <p>
+                    The whole decision happens in two small functions on the backend
+                    (<code>estimate_query_complexity</code> and <code>select_model_tier</code>
+                    in <code>lambda_handler.py</code>) - no load balancer, no circuit breaker,
+                    no health monitor involved. This is the routing decision in its simplest form.
+                </p>
+            </section>
+        </main>
+    </div>
+    <script src="smart-routing.js"></script>
+</body>
+</html>

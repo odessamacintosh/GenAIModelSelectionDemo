@@ -1,0 +1,151 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f6fa;
+    color: #2d3436;
+    margin: 0;
+    padding: 0;
+}
+
+#app {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.sr-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 16px;
+    color: #667eea;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.sr-header h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+}
+
+.sr-header .subtitle {
+    color: #636e72;
+    margin: 0;
+}
+
+.sr-query-section {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+}
+
+.sr-query-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.sr-query-section textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #dfe6e9;
+    border-radius: 8px;
+    font-size: 15px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+#submitBtn {
+    margin-top: 12px;
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+#submitBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.sr-result-section {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+}
+
+.sr-routing-decision {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.sr-tier-badge {
+    color: white;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+}
+
+.sr-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+    color: #636e72;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.sr-answer {
+    white-space: pre-wrap;
+    line-height: 1.5;
+    border-top: 1px solid #f1f2f6;
+    padding-top: 16px;
+}
+
+.sr-error-section {
+    background: #ffe8e8;
+    color: #c0392b;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.sr-explainer {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.sr-explainer h2 {
+    margin-top: 0;
+    font-size: 18px;
+}
+
+.sr-explainer code {
+    background: #f1f2f6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+}

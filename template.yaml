@@ -57,6 +57,11 @@ Resources:
           Properties:
             Path: /admin/simulate-failure
             Method: post
+        SmartRoutingApi:
+          Type: Api
+          Properties:
+            Path: /smart-routing
+            Method: post
       Tags:
         Project: genai-model-selection-demo
         Environment: demo

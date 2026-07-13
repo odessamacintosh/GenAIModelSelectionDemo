@@ -1,6 +1,9 @@
 # OS
 .DS_Store
 
+# Editor
+.vscode/
+
 # Python
 __pycache__/
 *.pyc
