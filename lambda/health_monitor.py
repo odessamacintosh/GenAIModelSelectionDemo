@@ -434,11 +434,17 @@ class ModelHealthMonitor:
             # Create minimal test message for health check
             messages = [create_user_message(test_query)]
             
-            # Execute health check with minimal resource usage
+            # Execute health check with minimal resource usage.
+            # Note: reasoning models (e.g. GPT-OSS) spend tokens on an internal
+            # reasoning block before producing visible text, so a very small
+            # budget like 5 tokens can be exhausted before any answer text is
+            # generated, causing a false "unhealthy" result. 50 tokens gives
+            # enough headroom for reasoning models while still being a cheap,
+            # minimal request for non-reasoning models.
             response = self.adapter.converse(
                 model_id=model_id,
                 messages=messages,
-                max_tokens=5,      # Minimal response for health check
+                max_tokens=50,     # Minimal response for health check
                 temperature=0.0    # Deterministic response
             )
             
