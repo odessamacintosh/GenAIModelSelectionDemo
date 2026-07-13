@@ -39,8 +39,10 @@ class ModelProvider(Enum):
 
 class ModelType(Enum):
     """Specific model types available through Bedrock Converse API"""
-    # Anthropic Claude 3 models
-    CLAUDE_3_SONNET = "anthropic.claude-3-sonnet-20240229-v1:0"
+    # Anthropic Claude models (Claude 3 Sonnet has been retired by Bedrock;
+    # using the currently active Claude Sonnet 4.5 model via its cross-region
+    # inference profile, which is required for on-demand throughput)
+    CLAUDE_3_SONNET = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
     
     # OpenAI GPT models (available through Bedrock)
     GPT_OSS_120B = "openai.gpt-oss-120b-1:0"
@@ -302,8 +304,15 @@ class BedrockConverseAdapter:
             # Call Bedrock Converse API - this works identically for all providers
             response = self.bedrock_client.converse(**request_payload)
             
-            # Extract response content in standardized format
-            content = response['output']['message']['content'][0]['text']
+            # Extract response content in standardized format.
+            # Some models (e.g. GPT-OSS) return multiple content blocks
+            # (reasoning + text), so find the first block that has text
+            # instead of assuming it's always at index 0.
+            content_blocks = response['output']['message']['content']
+            content = next(
+                (block['text'] for block in content_blocks if 'text' in block),
+                ''
+            )
             
             # Calculate metrics
             latency_ms = int((time.time() - start_time) * 1000)
