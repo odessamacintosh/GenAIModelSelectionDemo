@@ -13,7 +13,7 @@ class GenAIDemo {
     constructor() {
         // Configuration
         this.config = {
-            apiBaseUrl: 'https://gbzzde1msc.execute-api.us-west-2.amazonaws.com/Prod', // Will be configured for API Gateway
+            apiBaseUrl: 'https://vdmznlxvgk.execute-api.us-west-2.amazonaws.com/Prod', // Will be configured for API Gateway
             sessionId: this.generateSessionId(),
             maxRetries: 3,
             retryDelay: 1000
@@ -1449,12 +1449,65 @@ window.onclick = function(event) {
     }
 };
 
+/**
+ * Wire up hover tooltips for the SVG architecture diagram.
+ *
+ * The tooltip text lives in each <rect class="tooltip-area"> element's
+ * data-tooltip attribute. CSS ::after/::before generated content (used
+ * for the other tooltips on this page, like the .help-icon spans) does
+ * not render on SVG shape elements like <rect> in most browsers, so
+ * those tooltips silently never appeared. This creates a single
+ * positioned <div> tooltip and shows/hides/moves it on mouse events
+ * instead, which works for any element type.
+ */
+function initDiagramTooltips() {
+    const diagramContainer = document.getElementById('architectureDiagram');
+    if (!diagramContainer) {
+        return;
+    }
+
+    // Reuse a single tooltip element rather than creating one per hover
+    let tooltipEl = document.getElementById('diagramTooltip');
+    if (!tooltipEl) {
+        tooltipEl = document.createElement('div');
+        tooltipEl.id = 'diagramTooltip';
+        tooltipEl.className = 'diagram-tooltip';
+        diagramContainer.appendChild(tooltipEl);
+    }
+
+    const tooltipAreas = diagramContainer.querySelectorAll('.tooltip-area');
+
+    tooltipAreas.forEach(area => {
+        const tooltipText = area.getAttribute('data-tooltip');
+        if (!tooltipText) {
+            return;
+        }
+
+        area.addEventListener('mouseenter', () => {
+            tooltipEl.textContent = tooltipText;
+            tooltipEl.style.display = 'block';
+        });
+
+        area.addEventListener('mousemove', (e) => {
+            const containerRect = diagramContainer.getBoundingClientRect();
+            tooltipEl.style.left = (e.clientX - containerRect.left + 12) + 'px';
+            tooltipEl.style.top = (e.clientY - containerRect.top + 12) + 'px';
+        });
+
+        area.addEventListener('mouseleave', () => {
+            tooltipEl.style.display = 'none';
+        });
+    });
+}
+
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.genaiDemo = new GenAIDemo();
     
     // Add click handlers for architecture diagram components
     setTimeout(() => {
+        initDiagramTooltips();
+
         // Find all tooltip areas and add click handlers to the Lambda and Bedrock ones
         const tooltipAreas = document.querySelectorAll('.tooltip-area');
         

@@ -757,13 +757,16 @@ input:checked + .slider:before {
     border-left: 4px solid var(--info-color);
 }
 
-/* Tooltip Implementation for SVG */
-.tooltip-area:hover::after {
-    content: attr(data-tooltip);
+/* Tooltip Implementation for the SVG architecture diagram.
+   ::after/::before generated content doesn't render on SVG shape elements
+   like <rect> in most browsers, so a JS-driven positioned tooltip element
+   is used instead (see initDiagramTooltips() in app.js) rather than CSS
+   pseudo-elements on .tooltip-area. */
+.diagram-tooltip {
+    display: none;
     position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 0;
+    left: 0;
     background: var(--primary-color);
     color: white;
     padding: 12px 16px;
