@@ -7,7 +7,7 @@
  * the more advanced patterns in the main demo.
  */
 
-const apiBaseUrl = 'https://89146f5y80.execute-api.us-east-1.amazonaws.com/Prod'; // Will be configured for API Gateway
+const apiBaseUrl = 'https://gbzzde1msc.execute-api.us-west-2.amazonaws.com/Prod'; // Will be configured for API Gateway
 
 const queryInput = document.getElementById('queryInput');
 const submitBtn = document.getElementById('submitBtn');

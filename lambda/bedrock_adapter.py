@@ -47,10 +47,16 @@ class ModelType(Enum):
     # OpenAI GPT models (available through Bedrock)
     GPT_OSS_120B = "openai.gpt-oss-120b-1:0"
     
-    # AWS Nova models
-    NOVA_PRO = "amazon.nova-pro-v1:0"
-    NOVA_LITE = "amazon.nova-lite-v1:0"
-    NOVA_MICRO = "amazon.nova-micro-v1:0"
+    # AWS Nova models, via their cross-region inference profiles. Bare model
+    # IDs work for on-demand throughput in some regions (e.g. us-east-1) but
+    # not others (e.g. us-west-2), where Bedrock requires the "us." prefixed
+    # inference profile ID instead. Using the profile ID everywhere makes
+    # this work consistently regardless of which region the stack is
+    # deployed to, rather than only working in whichever region it happened
+    # to be tested in.
+    NOVA_PRO = "us.amazon.nova-pro-v1:0"
+    NOVA_LITE = "us.amazon.nova-lite-v1:0"
+    NOVA_MICRO = "us.amazon.nova-micro-v1:0"
 
     # Additional Anthropic Claude tiers (used for the complexity-based
     # smart-routing demo; CLAUDE_3_SONNET above is reused as the "moderate"

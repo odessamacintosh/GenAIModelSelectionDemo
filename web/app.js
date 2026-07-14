@@ -13,7 +13,7 @@ class GenAIDemo {
     constructor() {
         // Configuration
         this.config = {
-            apiBaseUrl: 'https://89146f5y80.execute-api.us-east-1.amazonaws.com/Prod', // Will be configured for API Gateway
+            apiBaseUrl: 'https://gbzzde1msc.execute-api.us-west-2.amazonaws.com/Prod', // Will be configured for API Gateway
             sessionId: this.generateSessionId(),
             maxRetries: 3,
             retryDelay: 1000

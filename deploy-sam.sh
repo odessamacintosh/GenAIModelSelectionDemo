@@ -40,11 +40,21 @@ echo ""
 
 # Step 2: Deploy
 echo "Step 2/3: Deploying to AWS..."
-sam deploy --resolve-s3 --no-confirm-changeset --capabilities CAPABILITY_IAM
+DEPLOY_OUTPUT=$(sam deploy --resolve-s3 --no-confirm-changeset --capabilities CAPABILITY_IAM 2>&1)
+DEPLOY_EXIT_CODE=$?
+echo "$DEPLOY_OUTPUT"
 
-if [ $? -ne 0 ]; then
-    echo "❌ Deployment failed!"
-    exit 1
+if [ $DEPLOY_EXIT_CODE -ne 0 ]; then
+    # "No changes to deploy" isn't a real failure - it means the stack is
+    # already up to date (e.g. re-running this script with no code changes).
+    # Treat that case as success and continue to Step 3 so the website
+    # files still get synced; any other error is a real failure.
+    if echo "$DEPLOY_OUTPUT" | grep -q "No changes to deploy"; then
+        echo "ℹ️  Stack is already up to date, no CloudFormation changes needed."
+    else
+        echo "❌ Deployment failed!"
+        exit 1
+    fi
 fi
 
 echo "✅ Deployment complete!"
@@ -125,6 +135,23 @@ fi
 echo "Invalidating CloudFront cache..."
 if ! aws cloudfront create-invalidation --distribution-id ${DIST_ID} --paths "/*" --region "$REGION" > /dev/null; then
     echo "⚠️  Warning: CloudFront invalidation failed. The site may serve stale content until the cache naturally expires."
+fi
+
+echo ""
+echo "Verifying deployment..."
+
+API_HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${API_URL}/health")
+if [ "$API_HEALTH_STATUS" == "200" ]; then
+    echo "✅ API health check passed ($API_HEALTH_STATUS)"
+else
+    echo "⚠️  API health check returned $API_HEALTH_STATUS (expected 200)"
+fi
+
+WEBSITE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$WEBSITE_URL")
+if [ "$WEBSITE_STATUS" == "200" ]; then
+    echo "✅ Website is serving content ($WEBSITE_STATUS)"
+else
+    echo "⚠️  Website returned $WEBSITE_STATUS (expected 200) - CloudFront cache may still be clearing, or web/ files may not have synced"
 fi
 
 echo ""
