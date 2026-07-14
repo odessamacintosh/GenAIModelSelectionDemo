@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Disable the AWS CLI pager so output prints directly instead of opening an
+# interactive pager (which can make this script look like it's hung).
+export AWS_PAGER=""
+
 echo "=========================================="
 echo "  GenAI Demo - Cleanup Script            "
 echo "=========================================="
