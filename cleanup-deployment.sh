@@ -4,6 +4,21 @@
 # interactive pager (which can make this script look like it's hung).
 export AWS_PAGER=""
 
+# Resolve the region from the active AWS CLI profile/config, so this script
+# always targets the same region the stack was actually deployed to (via
+# `sam deploy`, which also now uses the profile's region rather than a
+# hardcoded one). Every aws command below passes --region explicitly so
+# nothing silently falls through to a different default.
+REGION=$(aws configure get region)
+if [ -z "$REGION" ]; then
+    echo "❌ Could not determine AWS region from your CLI profile."
+    echo "   Set one with: aws configure set region <region>"
+    echo "   or export AWS_REGION=<region> before running this script."
+    exit 1
+fi
+echo "Using region: $REGION"
+echo ""
+
 echo "=========================================="
 echo "  GenAI Demo - Cleanup Script            "
 echo "=========================================="
@@ -33,12 +48,13 @@ STACK_NAME="genai-model-selection-demo"
 echo "Step 1/4: Finding S3 bucket..."
 BUCKET=$(aws cloudformation describe-stacks \
     --stack-name $STACK_NAME \
+    --region "$REGION" \
     --query 'Stacks[0].Outputs[?OutputKey==`WebsiteBucket`].OutputValue' \
     --output text 2>/dev/null)
 
 if [ -z "$BUCKET" ] || [[ "$BUCKET" == *"error"* ]]; then
     echo "⚠️  Could not get bucket from CloudFormation, trying alternative method..."
-    BUCKET=$(aws s3 ls | grep genai-demo-website | awk '{print $3}' | head -n 1)
+    BUCKET=$(aws s3 ls --region "$REGION" | grep genai-demo-website | awk '{print $3}' | head -n 1)
 fi
 
 if [ -n "$BUCKET" ] && [ "$BUCKET" != "None" ]; then
@@ -47,7 +63,7 @@ if [ -n "$BUCKET" ] && [ "$BUCKET" != "None" ]; then
     # Step 2: Empty S3 bucket
     echo ""
     echo "Step 2/4: Emptying S3 bucket..."
-    aws s3 rm s3://${BUCKET}/ --recursive
+    aws s3 rm s3://${BUCKET}/ --recursive --region "$REGION"
     
     if [ $? -eq 0 ]; then
         echo "✅ S3 bucket emptied successfully"
@@ -61,7 +77,7 @@ fi
 # Step 3: Delete CloudFormation stack
 echo ""
 echo "Step 3/4: Deleting CloudFormation stack..."
-aws cloudformation delete-stack --stack-name $STACK_NAME
+aws cloudformation delete-stack --stack-name $STACK_NAME --region "$REGION"
 
 if [ $? -eq 0 ]; then
     echo "✅ Stack deletion initiated"
@@ -69,7 +85,7 @@ if [ $? -eq 0 ]; then
     echo "Waiting for stack deletion to complete..."
     echo "(This may take 5-10 minutes)"
     
-    aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME 2>/dev/null
+    aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME --region "$REGION" 2>/dev/null
     
     if [ $? -eq 0 ]; then
         echo "✅ Stack deleted successfully"

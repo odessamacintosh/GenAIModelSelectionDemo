@@ -4,6 +4,20 @@
 # interactive pager (which can make this script look like it's hung).
 export AWS_PAGER=""
 
+# Resolve the region from the active AWS CLI profile/config. `sam deploy`
+# below also relies on this (samconfig.toml no longer hardcodes a region),
+# so this script and the actual deployed stack always agree on where things
+# live, instead of silently drifting apart like they did before.
+REGION=$(aws configure get region)
+if [ -z "$REGION" ]; then
+    echo "❌ Could not determine AWS region from your CLI profile."
+    echo "   Set one with: aws configure set region <region>"
+    echo "   or export AWS_REGION=<region> before running this script."
+    exit 1
+fi
+echo "Using region: $REGION"
+echo ""
+
 echo "=========================================="
 echo "  GenAI Demo - SAM Deployment Script     "
 echo "=========================================="
@@ -42,6 +56,7 @@ echo "Step 3/3: Configuring website..."
 # Get API URL
 API_URL=$(aws cloudformation describe-stacks \
     --stack-name genai-model-selection-demo \
+    --region "$REGION" \
     --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
     --output text)
 
@@ -53,6 +68,7 @@ fi
 # Get S3 bucket name
 BUCKET=$(aws cloudformation describe-stacks \
     --stack-name genai-model-selection-demo \
+    --region "$REGION" \
     --query 'Stacks[0].Outputs[?OutputKey==`WebsiteBucket`].OutputValue' \
     --output text)
 
@@ -64,6 +80,7 @@ fi
 # Get Website URL
 WEBSITE_URL=$(aws cloudformation describe-stacks \
     --stack-name genai-model-selection-demo \
+    --region "$REGION" \
     --query 'Stacks[0].Outputs[?OutputKey==`WebsiteURL`].OutputValue' \
     --output text)
 
@@ -75,6 +92,7 @@ fi
 # Get CloudFront Distribution ID
 DIST_ID=$(aws cloudformation describe-stack-resources \
     --stack-name genai-model-selection-demo \
+    --region "$REGION" \
     --query 'StackResources[?ResourceType==`AWS::CloudFront::Distribution`].PhysicalResourceId' \
     --output text)
 
@@ -97,14 +115,15 @@ rm -f web/app.js.bak web/smart-routing.js.bak
 
 # Upload website files
 echo "Uploading website files to S3..."
-if ! aws s3 sync web/ s3://${BUCKET}/ --exclude "*.bak" --exclude "__pycache__/*"; then
+if ! aws s3 sync web/ s3://${BUCKET}/ --region "$REGION" --exclude "*.bak" --exclude "__pycache__/*"; then
     echo "❌ Failed to sync website files to S3. Aborting."
     exit 1
 fi
 
-# Invalidate CloudFront cache
+# Invalidate CloudFront cache (CloudFront is a global service, but the CLI
+# call itself is region-agnostic aside from needing a region configured)
 echo "Invalidating CloudFront cache..."
-if ! aws cloudfront create-invalidation --distribution-id ${DIST_ID} --paths "/*" > /dev/null; then
+if ! aws cloudfront create-invalidation --distribution-id ${DIST_ID} --paths "/*" --region "$REGION" > /dev/null; then
     echo "⚠️  Warning: CloudFront invalidation failed. The site may serve stale content until the cache naturally expires."
 fi
 

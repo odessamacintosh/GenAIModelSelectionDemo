@@ -24,6 +24,7 @@ Key educational concepts demonstrated:
 """
 
 import json
+import os
 import time
 import logging
 import traceback
@@ -60,7 +61,7 @@ _simulated_failures: Dict[str, bool] = {
 }
 
 
-def initialize_components(region_name: str = "us-east-1") -> tuple:
+def initialize_components(region_name: Optional[str] = None) -> tuple:
     """
     Initialize all system components with comprehensive error handling.
     
@@ -78,9 +79,15 @@ def initialize_components(region_name: str = "us-east-1") -> tuple:
         RuntimeError: If initialization fails
     """
     global _adapter, _health_monitor, _router
-    
+
+    # Default to the region this Lambda function is actually running in
+    # (AWS sets AWS_REGION automatically), instead of hardcoding a region
+    # that could drift out of sync with where the stack is deployed.
+    if region_name is None:
+        region_name = os.environ.get('AWS_REGION', 'us-east-1')
+
     try:
-        logger.info("Initializing GenAI model selection system components")
+        logger.info(f"Initializing GenAI model selection system components in {region_name}")
         start_time = time.time()
         
         # Initialize unified Bedrock adapter

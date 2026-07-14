@@ -68,10 +68,19 @@ Resources:
         Purpose: education
 
   # S3 Bucket for Website
+  #
+  # BucketName includes a short suffix derived from the stack's unique ID
+  # (CloudFormation generates this automatically, no random-number generator
+  # needed) so redeploying doesn't collide with a same-named bucket that was
+  # just deleted, and deploying to multiple regions/accounts won't collide
+  # either. Note: this suffix is lowercase hex (0-9, a-f), not decimal
+  # digits, since it's taken directly from the stack ID.
   WebsiteBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "genai-demo-website-${AWS::AccountId}"
+      BucketName: !Sub
+        - "genai-demo-website-${AWS::AccountId}-${Suffix}"
+        - Suffix: !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref "AWS::StackId"]]]]
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
