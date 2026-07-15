@@ -680,6 +680,17 @@ class IntelligentModelRouter:
         healthy_models = []
         
         for model_id, health_result in health_results.items():
+            # Only consider models this router actually has a capability
+            # profile for. The health monitor checks every model known to
+            # the adapter, which can include models added for other demos
+            # (e.g. the Claude Haiku/Opus tiers used by the smart-routing
+            # demo) that were never registered in this router's
+            # self.model_capabilities table. Without this filter, the
+            # router could select one of those models and then crash with
+            # a KeyError when looking up its capability profile.
+            if model_id not in self.model_capabilities:
+                continue
+
             if health_result.status.value >= min_health_status.value:
                 healthy_models.append(model_id)
             else:
