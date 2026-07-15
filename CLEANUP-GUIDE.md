@@ -24,7 +24,7 @@ The cleanup process removes:
 - ✅ **Lambda Function** - Router function and code
 - ✅ **API Gateway** - REST API and endpoints
 - ✅ **IAM Roles** - Lambda execution role and policies
-- ✅ **CloudWatch Log Groups** - Function logs (retained 30 days by default)
+- ⚠️ **CloudWatch Log Groups** - NOT deleted by this script (see note below)
 
 ### Local Artifacts
 - ✅ `.aws-sam/` directory
@@ -50,40 +50,56 @@ Removes SAM build artifacts and deployment packages.
 
 If you prefer manual cleanup or the script fails:
 
+### 0. Determine Your Region
+
+Both the deploy and cleanup scripts resolve the region from your active AWS CLI profile (`aws configure get region`) rather than a hardcoded value, so use the same region for manual commands:
+
+```bash
+REGION=$(aws configure get region)
+```
+
 ### 1. Empty S3 Bucket
 
 ```bash
 # Get bucket name
 BUCKET=$(aws cloudformation describe-stacks \
     --stack-name genai-model-selection-demo \
+    --region "$REGION" \
     --query 'Stacks[0].Outputs[?OutputKey==`WebsiteBucket`].OutputValue' \
     --output text)
 
 # Empty bucket
-aws s3 rm s3://${BUCKET}/ --recursive
+aws s3 rm s3://${BUCKET}/ --recursive --region "$REGION"
 ```
 
 ### 2. Delete CloudFormation Stack
 
 ```bash
 # Delete stack
-aws cloudformation delete-stack --stack-name genai-model-selection-demo
+aws cloudformation delete-stack --stack-name genai-model-selection-demo --region "$REGION"
 
 # Wait for completion
-aws cloudformation wait stack-delete-complete --stack-name genai-model-selection-demo
+aws cloudformation wait stack-delete-complete --stack-name genai-model-selection-demo --region "$REGION"
 ```
 
 ### 3. Verify Deletion
 
 ```bash
 # Check stack status
-aws cloudformation describe-stacks --stack-name genai-model-selection-demo
+aws cloudformation describe-stacks --stack-name genai-model-selection-demo --region "$REGION"
 # Should return: "Stack with id genai-model-selection-demo does not exist"
 
 # Verify S3 bucket is gone
 aws s3 ls | grep genai-demo-website
 # Should return nothing
 ```
+
+Note: the website bucket name includes a short random-looking suffix
+(e.g. `genai-demo-website-<account-id>-<suffix>`), derived from the
+CloudFormation stack ID. This is intentional - it avoids S3 bucket name
+collisions when you delete and redeploy repeatedly across class sessions,
+since S3 bucket names are globally unique and a just-deleted name can
+briefly conflict with a new bucket creation attempt using the same name.
 
 ### 4. Clean Local Files
 
@@ -134,9 +150,10 @@ aws lambda list-functions | grep genai
 - **API Gateway** - Charged per request
 
 ### After Cleanup
-All charges stop immediately after resources are deleted.
-
-**Note:** CloudWatch logs are retained for 30 days but incur minimal storage costs.
+Charges for the deleted resources (Lambda, API Gateway, CloudFront, S3) stop
+immediately. CloudWatch logs are NOT deleted by cleanup and do not
+auto-expire by default, so log storage cost (small, but non-zero) continues
+to accrue until you manually delete the log group or set a retention policy.
 
 ## Partial Cleanup
 
@@ -179,7 +196,12 @@ The cleanup script includes:
 
 ## CloudWatch Logs Retention
 
-By default, CloudWatch logs are retained for 30 days after deletion.
+**Important:** Lambda log groups do NOT expire automatically by default -
+they're retained indefinitely unless you explicitly set a retention policy.
+`cleanup-deployment.sh` does not delete the log group (it's not part of the
+CloudFormation stack, so stack deletion doesn't remove it either). If you
+redeploy and clean up repeatedly across many class sessions, log storage
+will accumulate over time (a small, but non-zero, ongoing cost).
 
 ### To Delete Logs Immediately
 
@@ -202,6 +224,7 @@ After cleanup, verify all resources are gone:
 - [ ] API Gateway deleted
 - [ ] IAM roles deleted
 - [ ] Local artifacts removed
+- [ ] (Optional) CloudWatch log group manually deleted if you want to avoid ongoing log storage cost - this is NOT handled automatically
 
 ## Support
 
@@ -221,5 +244,5 @@ If you encounter issues during cleanup:
 
 ---
 
-**Last Updated:** November 2025  
-**Script Version:** 1.0
+**Last Updated:** July 2026
+**Script Version:** 1.1
